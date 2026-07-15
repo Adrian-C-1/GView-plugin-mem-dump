@@ -1623,6 +1623,17 @@ namespace View
         };
     }; // namespace GridViewer
 
+    namespace VMEMViewer
+    {
+        struct CORE_EXPORT Settings {
+            void* data;
+
+            Settings();
+            bool SetName(std::string_view name);
+        };
+    }; // VMEMViewer
+
+    
     namespace DissasmViewer // StructureViewer
     {
         using TypeID = uint32;
@@ -1691,6 +1702,8 @@ namespace View
         virtual bool CreateViewer(TextViewer::Settings& settings)      = 0;
         virtual bool CreateViewer(ContainerViewer::Settings& settings) = 0;
         virtual bool CreateViewer(LexicalViewer::Settings& settings)   = 0;
+        virtual bool CreateViewer(VMEMViewer::Settings& settings)   = 0;
+
         virtual Reference<ViewControl> GetCurrentView()                = 0;
         virtual uint32 GetViewsCount()                                 = 0;
         virtual Reference<ViewControl> GetViewByIndex(uint32 index)    = 0;

@@ -8,7 +8,7 @@ namespace Type
 {
     namespace VMEM
     {
-        class VMEMFile : public TypeInterface, public GView::View::LexicalViewer::ParseInterface{
+        class VMEMFile : public TypeInterface {
             public:
                 VMEMFile();
                 std::string_view GetTypeName() override;

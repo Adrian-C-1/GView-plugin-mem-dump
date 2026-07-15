@@ -24,7 +24,7 @@ extern "C"
     }
     PLUGIN_EXPORT TypeInterface* CreateInstance()
     {
-        return new GView::Type::VMEM::VMEMFile();
+        return new VMEMFile();
     }
     PLUGIN_EXPORT bool PopulateWindowBackup(Reference<WindowInterface> win){
         using namespace GView::View::BufferViewer;
@@ -48,7 +48,7 @@ extern "C"
         auto vmem = win->GetObject()->GetContentType<VMEMFile>();
     
         // asta e in viewer propriu
-        win->CreateViewer<GView::Type::VMEM::Views::VMEMView>("VMEM View", vmem); 
+        win->CreateViewer<VMEMViewer::Settings>("VMEM SETTING");
 
         // asta imi creaza un buferviewer
         // bufferviewer se loadeaza mult mai repede dacat textview
