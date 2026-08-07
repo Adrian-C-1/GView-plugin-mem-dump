@@ -48,8 +48,11 @@ extern "C"
         auto vmem = win->GetObject()->GetContentType<VMEMFile>();
     
         // asta e in viewer propriu
-        win->CreateViewer<VMEMViewer::Settings>("VMEM SETTING");
-
+        VMEMViewer::Settings vmemViewerSettings;
+        vmemViewerSettings.SetName("VMEM SETTING");
+        vmemViewerSettings.data = static_cast<void*>(&vmem->a);
+        win->CreateViewer(vmemViewerSettings);
+        
         // asta imi creaza un buferviewer
         // bufferviewer se loadeaza mult mai repede dacat textview
         if (1 == 1){

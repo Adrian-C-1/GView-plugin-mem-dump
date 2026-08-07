@@ -8,6 +8,7 @@ namespace GView::View::VMEMViewer
     {
         Reference<GView::Object> obj;
         String name;
+        std::string* sharedState;
     public:
         Instance(Reference<GView::Object> obj, Settings* settings);
 

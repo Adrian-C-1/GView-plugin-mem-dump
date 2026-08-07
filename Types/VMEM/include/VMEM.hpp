@@ -34,6 +34,8 @@ namespace Type
 
                     return selectionZoneInterface->GetSelectionZone(index);
                 }
+            public:
+                std::string a = "a";
         };
 
         namespace Panels
