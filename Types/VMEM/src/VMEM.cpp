@@ -48,10 +48,10 @@ extern "C"
         auto vmem = win->GetObject()->GetContentType<VMEMFile>();
     
         // asta e in viewer propriu
-        VMEMViewer::Settings vmemViewerSettings;
-        vmemViewerSettings.SetName("VMEM SETTING");
-        vmemViewerSettings.data = static_cast<void*>(&vmem->a);
-        win->CreateViewer(vmemViewerSettings);
+        // VMEMViewer::Settings vmemViewerSettings;
+        // vmemViewerSettings.SetName("VMEM SETTING");
+        // vmemViewerSettings.data = static_cast<void*>(&vmem->a);
+        // win->CreateViewer(vmemViewerSettings);
         
         // asta imi creaza un buferviewer
         // bufferviewer se loadeaza mult mai repede dacat textview
@@ -60,21 +60,34 @@ extern "C"
             settings.SetName("VMEM");
             vmem->selectionZoneInterface = win->GetSelectionZoneInterfaceFromViewerCreation(settings);
         }
+        Reference<ViewControl> bufferView = win->GetCurrentView();
+        vmem->bufferView = bufferView;
+        
+        GView::Utils::ZonesList zones;
+        zones.Add(0x00, 0x0F, ColorPair{ Color::Black,  Color::Yellow }, "magic");
+        zones.Add(0x10, 0x3F, ColorPair{ Color::White,  Color::DarkRed }, "header");
+        vmem->bufferView->SetObjectsHighlightingZonesList(zones);
+        vmem->bufferView->OnEvent(nullptr, Event::Command, GView::View::VIEW_COMMAND_ACTIVATE_OBJECT_HIGHLIGHTING);
+        
         // asta imi creaza un text view (e slow asf)
-        if (1 == 1){
-            win->CreateViewer<TextViewer::Settings>("Text View name?");
-        }
+        // if (1 == 1){
+        //     win->CreateViewer<TextViewer::Settings>("Text View name?");
+        // }
 
         // asta e panelu din dreapta cu informatii despre file
         auto* panel = new GView::Type::VMEM::Panels::Information(vmem);
         win->AddPanel(AppCUI::Utils::Pointer<TabPage>(panel), true);
 
+        auto* panel2 = new GView::Type::VMEM::Panels::Structure(vmem);
+        win->AddPanel(AppCUI::Utils::Pointer<TabPage>(panel2), true);
+
         // win->AddPanel(AppCUI::Utils::Pointer<TabPage>(new Panels::Information(vmem)), true);
+        vmem->win = win;
         return true;
     }
     PLUGIN_EXPORT void UpdateSettings(IniSection sect)
     {
-        sect["Extension"] = { "vmem" };
+        sect["Extension"] = { "vmem", "dmp" };
         sect["Priority"]    = 1;
         sect["Description"] = "VMEM format Adrian";
     }

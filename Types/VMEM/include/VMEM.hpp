@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GView.hpp"
+#include <time.h>
 
 namespace GView
 {
@@ -8,6 +9,8 @@ namespace Type
 {
     namespace VMEM
     {
+        class DumpAnalyzer;
+
         class VMEMFile : public TypeInterface {
             public:
                 VMEMFile();
@@ -36,6 +39,11 @@ namespace Type
                 }
             public:
                 std::string a = "a";
+            
+            public:
+                Reference<GView::View::WindowInterface> win = nullptr;
+                Reference<GView::View::ViewControl> bufferView = nullptr;
+                DumpAnalyzer* dumpAnalyzer = nullptr;
         };
 
         namespace Panels
@@ -44,10 +52,16 @@ namespace Type
             {
                 Reference<VMEMFile> vmem;
                 Reference<AppCUI::Controls::ListView> general;
+                Reference<AppCUI::Controls::Button> refreshButton;
+                Reference<AppCUI::Controls::Label> details;
+                Reference<AppCUI::Controls::Button> toStructure;
+
+                Reference<AppCUI::Controls::Label> debug;
 
                 void UpdateGeneralInformation();
                 void RecomputePanelsPositions();
 
+                int cnt = 0;
             public:
                 Information(Reference<VMEMFile> vmem);
                 void Update();
@@ -55,27 +69,35 @@ namespace Type
                 {
                     RecomputePanelsPositions();
                 }
+                virtual bool OnEvent(
+                      Reference<AppCUI::Controls::Control> sender, AppCUI::Controls::Event evnt, int controlID) override;
+                uint64_t lastCursorOffset = GView::Utils::INVALID_OFFSET;
+                virtual void Paint(AppCUI::Graphics::Renderer& renderer) override;
+            private:
+                void GoToAligned(uint64 offset);
+                time_t lastClickTime = 0;
+            };
+            class Structure : public AppCUI::Controls::TabPage
+            {
+                Reference<VMEMFile> vmem;
+                Reference<AppCUI::Controls::Button> back;
+            public:
+                void Update();
+                Structure(Reference<VMEMFile> vmem);
+                virtual void OnAfterResize(int newWidth, int newHeight) override;
+                virtual bool OnEvent(
+                      Reference<AppCUI::Controls::Control> sender, AppCUI::Controls::Event evnt, int controlID) override;
+                virtual void Paint(AppCUI::Graphics::Renderer& renderer) override;
             };
         }
 
-        namespace Views
-        {
-            class VMEMView : public GView::View::ViewControl
-            {
+        class DumpAnalyzer{
+            private:
                 Reference<VMEMFile> vmem;
             public:
-                VMEMView(Reference<VMEMFile> vmem);
-                
-                bool GoTo(uint64 offset) override { return false; }
-                bool Select(uint64 offset, uint64 size) override { return false; }
-                bool ShowGoToDialog() override { return false; }
-                bool ShowFindDialog() override { return false; }
-                bool ShowCopyDialog() override { return false; }
-                void PaintCursorInformation(AppCUI::Graphics::Renderer& renderer, uint32 width, uint32 height) override {}
-                
-                void Paint(AppCUI::Graphics::Renderer& renderer) override;
-            };
-        }
+                DumpAnalyzer(Reference<VMEMFile> vmem);
+                std::vector<std::pair<std::string, std::string>> getHeaderFields();
+        };
     }
 }
 }

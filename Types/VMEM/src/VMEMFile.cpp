@@ -2,7 +2,9 @@
 
 using namespace GView::Type::VMEM;
 
-VMEMFile::VMEMFile(){};
+VMEMFile::VMEMFile(){
+    this->dumpAnalyzer = new DumpAnalyzer(this);
+};
 std::string_view VMEMFile::GetTypeName() {
     return "VMEM";
 };
