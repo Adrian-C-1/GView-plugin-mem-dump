@@ -48,14 +48,16 @@ namespace Type
 
         namespace Panels
         {
-            class Information : public AppCUI::Controls::TabPage
+            class Parser : public AppCUI::Controls::TabPage
             {
                 Reference<VMEMFile> vmem;
                 Reference<AppCUI::Controls::ListView> general;
                 Reference<AppCUI::Controls::Button> refreshButton;
-                Reference<AppCUI::Controls::Label> details;
                 Reference<AppCUI::Controls::Button> toStructure;
+                
+                Reference<AppCUI::Controls::Label> dataValue;
 
+                Reference<AppCUI::Controls::Label> details;
                 Reference<AppCUI::Controls::Label> debug;
 
                 void UpdateGeneralInformation();
@@ -63,7 +65,7 @@ namespace Type
 
                 int cnt = 0;
             public:
-                Information(Reference<VMEMFile> vmem);
+                Parser(Reference<VMEMFile> vmem);
                 void Update();
                 virtual void OnAfterResize(int newWidth, int newHeight) override
                 {
@@ -72,18 +74,28 @@ namespace Type
                 virtual bool OnEvent(
                       Reference<AppCUI::Controls::Control> sender, AppCUI::Controls::Event evnt, int controlID) override;
                 uint64_t lastCursorOffset = GView::Utils::INVALID_OFFSET;
+                uint64_t previousListIdex = 0;
+                bool ignoreAlign = false;
                 virtual void Paint(AppCUI::Graphics::Renderer& renderer) override;
+                void onInfoUpdate();
             private:
                 void GoToAligned(uint64 offset);
-                time_t lastClickTime = 0;
             };
-            class Structure : public AppCUI::Controls::TabPage
+
+            class Plugins : public AppCUI::Controls::TabPage
             {
                 Reference<VMEMFile> vmem;
-                Reference<AppCUI::Controls::Button> back;
+                Reference<AppCUI::Controls::ListView> general;
+
+                Reference<AppCUI::Controls::Button> inputLabel;
+                Reference<AppCUI::Controls::TextField> input;
+
+                Reference<AppCUI::Controls::Button> submit;
+
+                Reference<AppCUI::Controls::Label> debug;
             public:
                 void Update();
-                Structure(Reference<VMEMFile> vmem);
+                Plugins(Reference<VMEMFile> vmem);
                 virtual void OnAfterResize(int newWidth, int newHeight) override;
                 virtual bool OnEvent(
                       Reference<AppCUI::Controls::Control> sender, AppCUI::Controls::Event evnt, int controlID) override;
@@ -95,8 +107,28 @@ namespace Type
             private:
                 Reference<VMEMFile> vmem;
             public:
+            // todo copac cu lazy loading? 
+                struct Area{
+                    std::string json = "";
+                    std::string name = "";
+                    std::string value = "";
+                    std::string description = "";
+                    uint64_t startOffset = 0; // inclusive
+                    uint64_t endOffset = 0; // exclusive
+                    std::vector<Area> subAreas = {};
+                    bool loaded = false;
+                };
                 DumpAnalyzer(Reference<VMEMFile> vmem);
-                std::vector<std::pair<std::string, std::string>> getHeaderFields();
+                void buildRootStructure();
+                std::vector<Area> getStructure();
+                bool goToIndex(uint64_t index);
+                
+                std::vector<Area> currentStructure = {};
+
+            // Memory translation, pages etc
+            private:
+                void loadPagesFromDumpFile();
+                
         };
     }
 }
