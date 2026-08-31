@@ -75,6 +75,9 @@ extern "C"
         auto* panel2 = new GView::Type::VMEM::Panels::Plugins(vmem);
         win->AddPanel(AppCUI::Utils::Pointer<TabPage>(panel2), true);
 
+        auto* panel3 = new GView::Type::VMEM::Panels::Debug(vmem);
+        win->AddPanel(AppCUI::Utils::Pointer<TabPage>(panel3), true);
+
         // win->AddPanel(AppCUI::Utils::Pointer<TabPage>(new Panels::Information(vmem)), true);
         vmem->win = win;
         return true;

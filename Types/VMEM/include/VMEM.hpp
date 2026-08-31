@@ -2,6 +2,7 @@
 
 #include "GView.hpp"
 #include <time.h>
+#include <stdarg.h>
 
 namespace GView
 {
@@ -51,8 +52,11 @@ namespace Type
             class Parser : public AppCUI::Controls::TabPage
             {
                 Reference<VMEMFile> vmem;
+                
                 Reference<AppCUI::Controls::ListView> general;
+                
                 Reference<AppCUI::Controls::Button> refreshButton;
+                Reference<AppCUI::Controls::Button> toBack;
                 Reference<AppCUI::Controls::Button> toStructure;
                 
                 Reference<AppCUI::Controls::Label> dataValue;
@@ -101,34 +105,73 @@ namespace Type
                       Reference<AppCUI::Controls::Control> sender, AppCUI::Controls::Event evnt, int controlID) override;
                 virtual void Paint(AppCUI::Graphics::Renderer& renderer) override;
             };
+
+            class Debug : public AppCUI::Controls::TabPage
+            {
+                Reference<VMEMFile> vmem;
+                Reference<AppCUI::Controls::Button> refresh;
+                Reference<AppCUI::Controls::Label> debug;
+            public:
+                Debug(Reference<VMEMFile> _vmem);
+                virtual void OnAfterResize(int newWidth, int newHeight) override;
+                virtual bool OnEvent(
+                      Reference<AppCUI::Controls::Control> sender, AppCUI::Controls::Event evnt, int controlID) override;
+                virtual void Paint(AppCUI::Graphics::Renderer& renderer) override;
+            };
         }
 
         class DumpAnalyzer{
             private:
                 Reference<VMEMFile> vmem;
             public:
-            // todo copac cu lazy loading? 
+                // Areas for parsing
+
                 struct Area{
                     std::string json = "";
                     std::string name = "";
                     std::string value = "";
                     std::string description = "";
-                    uint64_t startOffset = 0; // inclusive
-                    uint64_t endOffset = 0; // exclusive
-                    std::vector<Area> subAreas = {};
+                    uint64_t offset = 0;
+                    uint64_t totalSize = 0;
+                    std::vector<Area*> children = {};
+                    Area* parent = nullptr;
                     bool loaded = false;
                 };
-                DumpAnalyzer(Reference<VMEMFile> vmem);
-                void buildRootStructure();
-                std::vector<Area> getStructure();
                 bool goToIndex(uint64_t index);
-                
-                std::vector<Area> currentStructure = {};
+                bool indexHasChildren(uint64_t index);
+                bool goToJsonKey(std::string jsonKey);
+                bool goUp();
+                bool goToIndex(Area* &area, uint64_t index);
+                bool goToJsonKey(Area* &area, std::string jsonKey);
+                bool goUp(Area* &area);
 
-            // Memory translation, pages etc
-            private:
-                void loadPagesFromDumpFile();
+                uint64_t getuint64_t(Area* area);
+                // 
                 
+                DumpAnalyzer(Reference<VMEMFile> vmem);
+                
+                Area* currentArea = nullptr;
+                Area* getArea();
+
+                std::vector<char> latestDebug = std::vector<char>(9999999);
+                inline void addDebug(const char* format, ...){
+                    va_list args;
+                    va_start(args, format);
+                    vsprintf(latestDebug.data() + strlen(latestDebug.data()), format, args);
+                    va_end(args);
+                }
+            private:
+                Area* buildArea(std::string jsonKey, Area* parent = nullptr, uint64_t absoluteOffset = 0, uint64_t depth = 1);
+                void loadPagesFromDumpFile();
+
+                uint64_t dtb;
+                uint64_t headerSize;
+                struct PhysicalMemoryRun{
+                    uint64_t BasePage;
+                    uint64_t PageCount;
+                };
+                std::vector<PhysicalMemoryRun> PhysicalMemoryRuns;
+
         };
     }
 }

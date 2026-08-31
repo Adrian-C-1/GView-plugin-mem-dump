@@ -7,6 +7,8 @@ using namespace AppCUI::Controls;
 
 constexpr int CMD_BUTTON_SUBMIT = 1;
 
+constexpr int CMD_VIRTUAL_MEMORY_ANALYZER = 2;
+
 Panels::Plugins::Plugins(Reference<VMEMFile> _vmem) 
     : TabPage("Dump File Plugins")
 {
@@ -17,7 +19,7 @@ Panels::Plugins::Plugins(Reference<VMEMFile> _vmem)
         { "n:Plugin Name,w:20", "n:Description,w:100" }, 
         ListViewFlags::None
     );
-    general->AddItem({ "Virtual Memory Analyzer", "Analyzes the virtual memory dump and provides insights" }).SetData(0);
+    general->AddItem({ "Virtual Memory Analyzer", "Analyzes the virtual memory dump and provides insights" }).SetData(CMD_VIRTUAL_MEMORY_ANALYZER);
     general->AddItem({ "Plugin 1", "Description of Plugin 1" });
     general->AddItem({ "Plugin 2", "Description of Plugin 2" });
     general->AddItem({ "Plugin 3", "Description of Plugin 3" });
@@ -47,9 +49,9 @@ bool Panels::Plugins::OnEvent(Reference<Control> sender, Event evnt, int control
     {
         auto item = general->GetCurrentItem();
         int idx = item.GetData(0);
-        if (idx == 0){
-            AppCUI::Dialogs::MessageBox::ShowYesNoCancel("Plugin Info", "Virtual Memory Analyzer: Analyzes the virtual memory dump and provides insights.");
-            AppCUI::Dialogs::WindowManager::Show();
+        if (idx == CMD_VIRTUAL_MEMORY_ANALYZER){
+            ;
+            // psloadedmodulelist 0xfffff80220013470
         }
         return true;
     }

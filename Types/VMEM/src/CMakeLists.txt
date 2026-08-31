@@ -3,5 +3,6 @@ target_sources(VMEM PRIVATE
     VMEMFile.cpp
     PanelParser.cpp
     PanelPlugins.cpp
+    PanelDebug.cpp
     DumpParser.cpp
 )
