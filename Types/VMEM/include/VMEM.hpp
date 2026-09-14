@@ -54,14 +54,17 @@ namespace Type
                 Reference<VMEMFile> vmem;
                 
                 Reference<AppCUI::Controls::ListView> general;
-                
+
                 Reference<AppCUI::Controls::Button> refreshButton;
                 Reference<AppCUI::Controls::Button> toBack;
                 Reference<AppCUI::Controls::Button> toStructure;
                 
+                Reference<AppCUI::Controls::Label> description;
                 Reference<AppCUI::Controls::Label> dataValue;
+                
+                Reference<AppCUI::Controls::Label> cursorInfo;
+                Reference<AppCUI::Controls::Button> goToPointer;
 
-                Reference<AppCUI::Controls::Label> details;
                 Reference<AppCUI::Controls::Label> debug;
 
                 void UpdateGeneralInformation();
@@ -80,6 +83,7 @@ namespace Type
                 uint64_t lastCursorOffset = GView::Utils::INVALID_OFFSET;
                 uint64_t previousListIdex = 0;
                 bool ignoreAlign = false;
+                bool pointerToStructure = false;
                 virtual void Paint(AppCUI::Graphics::Renderer& renderer) override;
                 void onInfoUpdate();
             private:
@@ -104,6 +108,8 @@ namespace Type
                 virtual bool OnEvent(
                       Reference<AppCUI::Controls::Control> sender, AppCUI::Controls::Event evnt, int controlID) override;
                 virtual void Paint(AppCUI::Graphics::Renderer& renderer) override;
+            private:
+                bool virtualMemoryAnalyzer();
             };
 
             class Debug : public AppCUI::Controls::TabPage
@@ -131,6 +137,7 @@ namespace Type
                     std::string name = "";
                     std::string value = "";
                     std::string description = "";
+                    std::string jsonPointer = "";
                     uint64_t offset = 0;
                     uint64_t totalSize = 0;
                     std::vector<Area*> children = {};
@@ -160,10 +167,20 @@ namespace Type
                     vsprintf(latestDebug.data() + strlen(latestDebug.data()), format, args);
                     va_end(args);
                 }
+
+                uint8_t* readFromVirtualAddress(uint64_t vaddr, size_t size);
+                uint64_t virtualAddressToFileOffset(uint64_t vaddr);    
             private:
                 Area* buildArea(std::string jsonKey, Area* parent = nullptr, uint64_t absoluteOffset = 0, uint64_t depth = 1);
+                
+                /// @brief Parses the runs from the dump file to correctly map memory pages to the dump file offset.
                 void loadPagesFromDumpFile();
-
+                uint64_t convertPhysicalAddressToDumpOffset(uint64_t physicalAddress);
+                uint64_t virtualToPhysical(uint64_t vaddr);
+                uint8_t* readVirtual(uint64_t vaddr, size_t size);
+                /// @brief Internal; init buffer inainte sa folosesti 
+                void readPhysical(uint64_t physicalAddress, void* buffer, size_t size);
+                
                 uint64_t dtb;
                 uint64_t headerSize;
                 struct PhysicalMemoryRun{
@@ -174,5 +191,5 @@ namespace Type
 
         };
     }
-}
+};
 }

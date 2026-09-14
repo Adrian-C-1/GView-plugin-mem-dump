@@ -40,19 +40,15 @@ bool Panels::Plugins::OnEvent(Reference<Control> sender, Event evnt, int control
 
     if ((evnt == Event::ButtonClicked) && (controlID == CMD_BUTTON_SUBMIT))
     {
-        std::string a;
-        auto text = input->GetText().ToString(a);
-        this->debug->SetText(LocalString<128>().Format("Stringul este %s", a.c_str()));
-        return true;
+        auto item = general->GetCurrentItem();
+        int data = item.GetData(0);
+        switch(data){
+            case CMD_VIRTUAL_MEMORY_ANALYZER:
+                return virtualMemoryAnalyzer();
+        }
     }
     if ((evnt == Event::ListViewCurrentItemChanged) && (sender == general.ToBase<Control>()))
     {
-        auto item = general->GetCurrentItem();
-        int idx = item.GetData(0);
-        if (idx == CMD_VIRTUAL_MEMORY_ANALYZER){
-            ;
-            // psloadedmodulelist 0xfffff80220013470
-        }
         return true;
     }
 
@@ -73,4 +69,32 @@ void Panels::Plugins::Paint(AppCUI::Graphics::Renderer& renderer)
 void Panels::Plugins::OnAfterResize(int newWidth, int newHeight)
 {
     TabPage::OnAfterResize(newWidth, newHeight);
+}
+
+
+
+bool Panels::Plugins::virtualMemoryAnalyzer()
+{
+    std::string a;
+    auto text = input->GetText().ToString(a);
+    this->debug->SetText(LocalString<128>().Format("Going to %s", a.c_str()));
+    if (!a.starts_with("0x")){
+        this->debug->SetText(LocalString<128>().Format("Invalid input, addresses must start with 0x"));
+        return true;
+    }
+    for(int i = 2; i < a.size(); i++)
+    {
+        if (!isxdigit(a[i]))
+        {
+            this->debug->SetText(LocalString<128>().Format("Invalid input, addresses must be hexadecimal (addr[%d=%c])", i, a[i]));
+            return true;
+        }
+    }
+    uint64_t off = vmem->dumpAnalyzer->virtualAddressToFileOffset(std::stoull(a, 0, 16));
+    if (off == 0){
+        this->debug->SetText(LocalString<128>().Format("Invalid address (may not be mapped in the dump)"));
+        return true;
+    }
+    vmem->bufferView->GoTo(off);
+    return true;
 }

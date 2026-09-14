@@ -3,8 +3,10 @@
 using namespace GView::Type::VMEM;
 using namespace AppCUI::Controls;
 
-constexpr int CMD_BUTTON_REFRESH = 1;
-constexpr int BUTTON_HEIGHT      = 2;
+constexpr int CMD_BUTTON_REFRESH      = 1;
+constexpr int BUTTON_HEIGHT          = 2;
+constexpr int CMD_BUTTON_GOTOPOINTER = 10;
+
 
 // &Parser -> I e rosu
 Panels::Parser::Parser(Reference<VMEMFile> _vmem) 
@@ -23,15 +25,18 @@ Panels::Parser::Parser(Reference<VMEMFile> _vmem)
     toBack = Factory::Button::Create(this, "&Go Back", "x:20,y:50%,w:20", CMD_BUTTON_REFRESH + 1);
     toStructure = Factory::Button::Create(this, "&Go to Structure", "x:40,y:50%,w:20", CMD_BUTTON_REFRESH + 2);
     
+    description = Factory::Label::Create(this, "", "x:0,y:90%,w:100%,h:1");
     dataValue = Factory::Label::Create(this, "", "x:0,y:80%,w:100%,h:1");
 
-    details       = Factory::Label::Create(this, "", "x:0,y:90%,w:100%,h:1");
+    cursorInfo = Factory::Label::Create(this, "", "x:0,y:85%,w:100%,h:1");
+    goToPointer = Factory::Button::Create(this, "&Go to Pointer", "x:60,y:50%,w:20", CMD_BUTTON_GOTOPOINTER);
+
     debug = Factory::Label::Create(this, "Debug aici :3", "x:0,y:99%,w:100%,h:1");
 
     this->Update();
     this->onInfoUpdate();
 
-    details->SetText("Details text here");
+    description->SetText("description text here");
 }
 
 void Panels::Parser::onInfoUpdate()
@@ -63,7 +68,9 @@ void Panels::Parser::UpdateGeneralInformation()
     LocalString<256> tempStr;
     NumericFormatter n;
 
-    if (general->GetChildrenCount() != 0){
+    this->pointerToStructure = false;
+
+    if (general->GetItemsCount() != 0){
         int selected_item = general->GetCurrentItem().GetData(0);
         auto structure = this->vmem->dumpAnalyzer->getArea();
         if (selected_item >= 0 && selected_item < structure->children.size())
@@ -85,21 +92,44 @@ void Panels::Parser::UpdateGeneralInformation()
                 typeName = type;
                 typeArrayCount = "0";
             }
-    
+
             if (typeName == "unsigned long long" && typeArrayCount == "0"){
                 auto child = structure->children[selected_item];
                 auto offset = child->offset;
                 uint64_t ptr = 0;
                 memcpy(&ptr, vmem->obj->GetData().Get(offset, 8, 0).GetData(), 8);
-                dataValue->SetText(tempStr.Format("offset: %#llx | as pointer: %#llx", offset, ptr));
+                
+                std::string info = std::string(tempStr.Format("Information: offset: %#llx | as pointer: %#llx", offset, ptr));
+                std::string jp = child->jsonPointer;
+                if (jp.size() > 0) info += "\n- Points to " + jp + " structure."; 
+                this->pointerToStructure = true;
+
+                dataValue->SetText(info);
             }
             else{
-                dataValue->SetText(tempStr.Format("Type: %s[%s]", typeName.c_str(), typeArrayCount.c_str()));
+                dataValue->SetText(tempStr.Format("Information: Type: %s[%s]", typeName.c_str(), typeArrayCount.c_str()));
             }
         }
     }
 
-    debug->SetText(tempStr.Format("Here after refresh, childrensize is %d", general->GetChildrenCount()));
+    GView::View::ViewData data;
+    bool _ok = vmem->bufferView->GetViewData(data, GView::Utils::INVALID_OFFSET);
+    uint64_t ptr = 0;
+    memcpy(&ptr, vmem->obj->GetData().Get(data.cursorStartOffset, 8, 0).GetData(), 8);
+    if (vmem->dumpAnalyzer->virtualAddressToFileOffset(ptr) != 0)
+    {
+        std::string s;
+        cursorInfo->GetText().ToString(s);
+        s = tempStr.Format("[cursor] Pointer going to: %#llx", ptr);
+    
+        cursorInfo->SetText(s);
+        goToPointer->SetEnabled(true);
+    }else{
+        goToPointer->SetEnabled(false);
+        cursorInfo->SetText("");
+    }
+
+    debug->SetText(tempStr.Format("Here after refresh, childrensize is %d", general->GetItemsCount()));
 }
 
 void Panels::Parser::RecomputePanelsPositions()
@@ -117,12 +147,49 @@ void Panels::Parser::RecomputePanelsPositions()
     {
         refreshButton->MoveTo(0, listHeight);
         refreshButton->Resize(20, BUTTON_HEIGHT);
+
+        // toBack->MoveTo(20, listHeight + BUTTON_HEIGHT);
+        // toBack->Resize(20, BUTTON_HEIGHT);
+
+        // toStructure->MoveTo(40, listHeight + BUTTON_HEIGHT);
+        // toStructure->Resize(20, BUTTON_HEIGHT);
     }
 
-    if (details.IsValid())
+    int currentHeight = listHeight + BUTTON_HEIGHT;
+
+    if (description.IsValid() && currentHeight < h)
     {
-        details->MoveTo(0, listHeight + BUTTON_HEIGHT);
-        details->Resize(w, std::max<>(1, h - (listHeight + BUTTON_HEIGHT)));
+        description->MoveTo(0, currentHeight);
+        description->Resize(w, 3);
+        currentHeight += 3;
+    }
+
+    if (dataValue.IsValid() && currentHeight < h)
+    {
+        dataValue->MoveTo(0, currentHeight);
+        dataValue->Resize(w, 3);
+        currentHeight += 3;
+    }
+
+    if (cursorInfo.IsValid() && currentHeight < h)
+    {
+        cursorInfo->MoveTo(0, currentHeight);
+        cursorInfo->Resize(w, 2);
+        currentHeight += 2;
+    }
+    
+    if (goToPointer.IsValid() && currentHeight < h)
+    {
+        goToPointer->MoveTo(0, h - 3);
+        goToPointer->Resize(20, BUTTON_HEIGHT);
+        currentHeight += BUTTON_HEIGHT;
+    }
+
+    if (debug.IsValid() && currentHeight < h)
+    {
+        debug->MoveTo(0, h - 1);
+        debug->Resize(w, 1);
+        currentHeight += 1;
     }
 }
 
@@ -160,8 +227,8 @@ bool Panels::Parser::OnEvent(Reference<Control> sender, Event evnt, int controlI
         previousListIdex = idx;
         this->UpdateGeneralInformation();
 
-        if (debug.IsValid())
-            debug->SetText(tmp.Format("Description: %s", structure[idx]->description.c_str()));
+        if (description.IsValid())
+            description->SetText(tmp.Format("Description: %s", structure[idx]->description.c_str()));
 
         return true;
     }
@@ -198,6 +265,18 @@ bool Panels::Parser::OnEvent(Reference<Control> sender, Event evnt, int controlI
         return true;
     }
 
+    if ((evnt == Event::ButtonClicked) && (controlID == CMD_BUTTON_GOTOPOINTER)){
+        // merg la pointerul ala, poate gasesc structura in json too
+        // 2 variante, ori sunt intrun element din lista ori sunt 
+        // in afara listei, dar pau hover la un pointer valid
+        if (pointerToStructure == true){
+            this->vmem->dumpAnalyzer->goToIndex(this->general->GetCurrentItem().GetData(0));
+            this->onInfoUpdate();
+            this->UpdateGeneralInformation();
+        }
+        return true;
+    }
+
     return false;
 }
 
@@ -209,6 +288,7 @@ void Panels::Parser::Update()
 
 void Panels::Parser::Paint(AppCUI::Graphics::Renderer& renderer)
 {
+
     // cand mut cursor in bufferview si am ajuns intr o zona noua
     if (vmem->bufferView.IsValid())
     {
